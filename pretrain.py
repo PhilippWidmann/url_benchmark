@@ -35,8 +35,8 @@ def make_agent(obs_type, obs_spec, action_spec, num_expl_steps, cfg):
 
 
 class Workspace:
-    def __init__(self, cfg):
-        self.work_dir = Path.cwd()
+    def __init__(self, cfg, train_env=None, eval_env=None, work_dir=None):
+        self.work_dir = work_dir if work_dir is not None else Path.cwd()
         print(f'workspace: {self.work_dir}')
 
         self.cfg = cfg
@@ -55,11 +55,15 @@ class Workspace:
                              use_tb=cfg.use_tb,
                              use_wandb=cfg.use_wandb)
         # create envs
-        task = PRIMAL_TASKS[self.cfg.domain]
-        self.train_env = dmc.make(task, cfg.obs_type, cfg.frame_stack,
-                                  cfg.action_repeat, cfg.seed)
-        self.eval_env = dmc.make(task, cfg.obs_type, cfg.frame_stack,
-                                 cfg.action_repeat, cfg.seed)
+        if train_env is None and eval_env is None:
+            task = PRIMAL_TASKS[self.cfg.domain]
+            self.train_env = dmc.make(task, cfg.obs_type, cfg.frame_stack,
+                                      cfg.action_repeat, cfg.seed)
+            self.eval_env = dmc.make(task, cfg.obs_type, cfg.frame_stack,
+                                     cfg.action_repeat, cfg.seed)
+        else:
+            self.train_env = train_env
+            self.eval_env = eval_env
 
         # create agent
         self.agent = make_agent(cfg.obs_type,
@@ -229,11 +233,23 @@ class Workspace:
             torch.save(payload, f)
 
 
+def pretrain_model(train_env, eval_env, cfg_override, work_dir=None):
+    with hydra.initialize(config_path="."):
+        cfg = hydra.compose(config_name="pretrain", overrides=cfg_override)
+        work_dir = Path(work_dir).absolute() if work_dir is not None else Path.cwd()
+        workspace = Workspace(cfg, train_env, eval_env, work_dir)
+        snapshot = work_dir / 'snapshot.pt'
+        if snapshot.exists():
+            print(f'resuming: {snapshot}')
+            workspace.load_snapshot()
+        workspace.train()
+        return workspace
+
+
 @hydra.main(config_path='.', config_name='pretrain')
 def main(cfg):
-    from pretrain import Workspace as W
     root_dir = Path.cwd()
-    workspace = W(cfg)
+    workspace = Workspace(cfg)
     snapshot = root_dir / 'snapshot.pt'
     if snapshot.exists():
         print(f'resuming: {snapshot}')
