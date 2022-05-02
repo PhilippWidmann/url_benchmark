@@ -1,6 +1,7 @@
 defaults:
   - agent: ddpg
   - override hydra/launcher: submitit_local
+  - _self_
 
 # mode
 reward_free: true

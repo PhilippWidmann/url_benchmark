@@ -170,7 +170,8 @@ class ReplayBuffer(IterableDataset):
 
 
 def _worker_init_fn(worker_id):
-    seed = np.random.get_state()[1][0] + worker_id
+    # item() transforms from np.int64 to int, avoids warning in random.seed
+    seed = (np.random.get_state()[1][0] + worker_id).item()
     np.random.seed(seed)
     random.seed(seed)
 
