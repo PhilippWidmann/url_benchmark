@@ -232,18 +232,28 @@ class Workspace:
         with snapshot.open('wb') as f:
             torch.save(payload, f)
 
+    def load_snapshot(self, snapshot):
+        if not snapshot.exists():
+            return False
+        with snapshot.open('rb') as f:
+            payload = torch.load(f)
+        self.agent = payload['agent']
+        self._global_step = payload['_global_step']
+        self._global_episode = payload['_global_episode']
+        return True
 
-def pretrain_model(train_env, eval_env, cfg_override, work_dir=None):
+
+def generate_model(train_env, eval_env, cfg_override, work_dir=None, snapshot_itr=0):
     with hydra.initialize(config_path="."):
         cfg = hydra.compose(config_name="pretrain", overrides=cfg_override)
         work_dir = Path(work_dir).absolute() if work_dir is not None else Path.cwd()
         workspace = Workspace(cfg, train_env, eval_env, work_dir)
-        snapshot = work_dir / 'snapshot.pt'
+        snapshot = work_dir / f'snapshot_{snapshot_itr}.pt'
+        pretrained = False
         if snapshot.exists():
             print(f'resuming: {snapshot}')
-            workspace.load_snapshot()
-        workspace.train()
-        return workspace
+            pretrained = workspace.load_snapshot(snapshot)
+        return workspace, pretrained
 
 
 @hydra.main(config_path='.', config_name='pretrain')
