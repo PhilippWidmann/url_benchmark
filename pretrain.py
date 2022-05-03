@@ -35,8 +35,9 @@ def make_agent(obs_type, obs_spec, action_spec, num_expl_steps, cfg):
 
 
 class Workspace:
-    def __init__(self, cfg, train_env=None, eval_env=None, work_dir=None):
+    def __init__(self, cfg, train_env=None, eval_env=None, work_dir=None, snapshot_prefix=None):
         self.work_dir = work_dir if work_dir is not None else Path.cwd()
+        self.snapshot_prefix = snapshot_prefix
         print(f'workspace: {self.work_dir}')
 
         self.cfg = cfg
@@ -226,7 +227,7 @@ class Workspace:
     def save_snapshot(self):
         snapshot_dir = self.work_dir / Path(self.cfg.snapshot_dir)
         snapshot_dir.mkdir(exist_ok=True, parents=True)
-        snapshot = snapshot_dir / f'snapshot_{self.global_frame}.pt'
+        snapshot = snapshot_dir / f'{self.snapshot_prefix}snapshot_{self.global_frame}.pt'
         keys_to_save = ['agent', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
@@ -243,12 +244,12 @@ class Workspace:
         return True
 
 
-def generate_model(train_env, eval_env, cfg_override, work_dir=None, snapshot_itr=0):
+def generate_model(train_env, eval_env, cfg_override, work_dir=None, snapshot_itr=0, snapshot_prefix=''):
     with hydra.initialize(config_path="."):
         cfg = hydra.compose(config_name="pretrain", overrides=cfg_override)
         work_dir = Path(work_dir).absolute() if work_dir is not None else Path.cwd()
-        workspace = Workspace(cfg, train_env, eval_env, work_dir)
-        snapshot = work_dir / f'snapshot_{snapshot_itr}.pt'
+        workspace = Workspace(cfg, train_env, eval_env, work_dir, snapshot_prefix=snapshot_prefix)
+        snapshot = work_dir / f'{snapshot_prefix}snapshot_{snapshot_itr}.pt'
         pretrained = False
         if snapshot.exists():
             print(f'resuming: {snapshot}')
