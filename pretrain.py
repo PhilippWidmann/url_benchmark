@@ -152,8 +152,9 @@ class Workspace:
             log('episode', self.global_episode)
             log('step', self.global_step)
 
-    def train(self):
+    def train(self, save_snapshots=True, additional_frames=0):
         # predicates
+        self.cfg.num_train_frames = self.cfg.num_train_frames + additional_frames
         train_until_step = utils.Until(self.cfg.num_train_frames,
                                        self.cfg.action_repeat)
         seed_until_step = utils.Until(self.cfg.num_seed_frames,
@@ -192,7 +193,7 @@ class Workspace:
                 self.replay_storage.add(time_step, meta)
                 self.train_video_recorder.init(time_step.observation)
                 # try to save snapshot
-                if self.global_frame in self.cfg.snapshots:
+                if save_snapshots and self.global_frame in self.cfg.snapshots:
                     self.save_snapshot()
                 episode_step = 0
                 episode_reward = 0
@@ -224,10 +225,11 @@ class Workspace:
             episode_step += 1
             self._global_step += 1
 
-    def save_snapshot(self):
+    def save_snapshot(self, external_epoch=None):
         snapshot_dir = self.work_dir / Path(self.cfg.snapshot_dir)
         snapshot_dir.mkdir(exist_ok=True, parents=True)
-        snapshot = snapshot_dir / f'{self.snapshot_prefix}snapshot_{self.global_frame}.pt'
+        snapshot_itr = external_epoch if external_epoch is not None else self.global_frame
+        snapshot = snapshot_dir / f'{self.snapshot_prefix}snapshot_{snapshot_itr}.pt'
         keys_to_save = ['agent', '_global_step', '_global_episode']
         payload = {k: self.__dict__[k] for k in keys_to_save}
         with snapshot.open('wb') as f:
