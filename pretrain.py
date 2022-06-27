@@ -252,10 +252,14 @@ def generate_model(train_env, eval_env, cfg_override, work_dir=None, snapshot_it
         work_dir = Path(work_dir).absolute() if work_dir is not None else Path.cwd()
         workspace = Workspace(cfg, train_env, eval_env, work_dir, snapshot_prefix=snapshot_prefix)
         snapshot = work_dir / f'{snapshot_prefix}snapshot_{snapshot_itr}.pt'
+        snapshot_init = work_dir / f'{snapshot_prefix}snapshot_0.pt'
         pretrained = False
         if snapshot.exists():
             print(f'resuming: {snapshot}')
             pretrained = workspace.load_snapshot(snapshot)
+        elif snapshot_init.exists():
+            print(f'resuming: {snapshot_init}')
+            pretrained = workspace.load_snapshot(snapshot_init)
         return workspace, pretrained
 
 
