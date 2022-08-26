@@ -1,3 +1,12 @@
+# This repository
+
+This repository is a fork of [URLB](https://github.com/rll-research/url_benchmark), 
+slightly modified to fit as a submodule of our own [meta-RL algorithm](https://github.com/PhilippWidmann/cemrl-edited). 
+For any other purpose than running our algorithm, we strongly suggest using the original URLB
+repository instead. 
+
+The following preserves the original README of URLB, to give readers a better understanding of its role in our code.
+
 # The Unsupervised Reinforcement Learning Benchmark (URLB)
 
 URLB provides a set of leading algorithms for unsupervised reinforcement learning where agents first pre-train without access to extrinsic rewards and then are finetuned to downstream tasks.
